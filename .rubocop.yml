@@ -234,3 +234,6 @@ Style/SwapValues: # new in 1.1
   Enabled: true
 Style/YAMLFileRead: # new in 1.53
   Enabled: true
+
+Metrics/MethodLength:
+  Max: 20
