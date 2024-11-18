@@ -3,24 +3,35 @@
 require_relative "dear_dirty_rails_controller/context"
 require_relative "dear_dirty_rails_controller/error_handler"
 require_relative "dear_dirty_rails_controller/hook"
+require_relative "dear_dirty_rails_controller/parameter"
 require_relative "dear_dirty_rails_controller/rack_response"
 require_relative "dear_dirty_rails_controller/serializable"
 require_relative "dear_dirty_rails_controller/version"
 
 module DearDirtyRailsController
   module Mixin
-    attr_reader :context, :args
+    attr_reader :context, :env, :request
 
     def self.included(base)
       base.extend ClassMethods
       base.include DearDirtyRailsController::ErrorHandler
       base.include DearDirtyRailsController::Hook
+      base.include DearDirtyRailsController::Parameter
       base.include DearDirtyRailsController::RackResponse
       base.include DearDirtyRailsController::Serializable
     end
 
-    def initialize(*args)
-      @args = args
+    def initialize(env)
+      @env = env
+      @request = ActionDispatch::Request.new(env)
+    end
+
+    def raw_params
+      ActionController::Parameters.new(request.params)
+    end
+
+    def params
+      @params ||= self.class.parameter&.parse(raw_params.to_h) || raw_params
     end
 
     def call
