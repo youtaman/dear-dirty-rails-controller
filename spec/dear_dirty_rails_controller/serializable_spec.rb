@@ -52,7 +52,7 @@ RSpec.describe DearDirtyRailsController::Serializable do
     end
 
     it "returns json result if no set serializer" do
-      expect(klass.new.send(:serialize, true)).to eq true.to_json
+      expect(klass.new.send(:serialize, true)).to eq true
     end
 
     it "prioritizes block over class" do

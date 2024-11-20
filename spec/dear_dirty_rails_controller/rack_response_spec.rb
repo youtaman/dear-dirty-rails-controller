@@ -79,7 +79,7 @@ RSpec.describe DearDirtyRailsController::RackResponse do
       status_code, headers, body = instance.send(:build_rack_response)
       expect(status_code).to eq 201
       expect(headers).to eq({ "X-Test" => "test", "Content-Type" => "application/json" })
-      expect(body).to eq ["test"]
+      expect(body).to eq ["test"].to_json
     end
 
     it "defaults status to 200" do
@@ -108,7 +108,7 @@ RSpec.describe DearDirtyRailsController::RackResponse do
     it "defaults body to empty array" do
       instance = klass.new
       _, _, body = instance.send(:build_rack_response)
-      expect(body).to eq []
+      expect(body).to eq [].to_json
     end
 
     it "merges class headers with instance headers(priority instance headers)" do
