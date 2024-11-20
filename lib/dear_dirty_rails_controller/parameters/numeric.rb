@@ -5,46 +5,32 @@ require_relative "base"
 module DearDirtyRailsController
   module Parameters
     class Numeric < Base
-      VALID_OPTIONS = %i[float values].freeze
+      VALID_OPTIONS = %i[float values default].freeze
 
       def initialize(name = nil, **options)
-        unless options[:default].nil?
-          if float?
-            unless options[:default].is_a?(Float)
-              raise ArgumentError,
-                    "default option is expected to be Float"
-            end
-          else
-            unless options[:default].is_a?(Integer)
-              raise ArgumentError,
-                    "default option is expected to be Integer"
-            end
+        super
+        return if options[:default].nil?
+
+        if float?
+          unless options[:default].is_a?(Float)
+            raise ArgumentError,
+                  "default option is expected to be Float"
+          end
+        else
+          unless options[:default].is_a?(Integer)
+            raise ArgumentError,
+                  "default option is expected to be Integer"
           end
         end
-
-        super
       end
 
-      def parse!(value)
-        result = if float?
-                   Float(value, exception: false)
-                 else
-                   Integer(value, exception: false)
-                 end
-        @parsed_value = result.nil? ? default_value : result
-      end
-
-      def valid?(value)
-        parse!(value)
-        @error_message = nil
-
-        if @parsed_value.nil?
-          @error_message = "#{@name} is expected to be not nil" unless optional?
-        elsif !in_values?
-          @error_message = "#{@name} is expected to be in #{@options[:values]}"
-        end
-
-        @error_message.nil?
+      def parse(value)
+        parsed_value = parse_to_number!(value)
+        parsed_value = @options[:default] if parsed_value.nil?
+        success(parsed_value)
+          .check(expect: method(:in_values?), error_message: "#{@name} is expected to be in #{@options[:values]}")
+      rescue
+        failure("#{@name} is expected to be #{float? ? "float" : "integer"}")
       end
 
       private
@@ -53,14 +39,22 @@ module DearDirtyRailsController
         @options[:float] || false
       end
 
-      def in_values?
+      def in_values?(value)
+        return true if value.nil?
         return true unless @options[:values]
 
-        @options[:values].include? @parsed_value
+        @options[:values].include? value
       end
 
-      def default_value
-        @options[:default] || nil
+      def parse_to_number!(value)
+        return nil if value.nil?
+        return Float(value) if float?
+
+        begin
+          Integer(value)
+        rescue
+          Float(value).to_i
+        end
       end
     end
   end

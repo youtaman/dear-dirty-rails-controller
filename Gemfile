@@ -5,9 +5,9 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in dear-dirty-rails-controller.gemspec
 gemspec
 
-gem "rake", "~> 13.0"
-gem "activesupport"
 gem "actionpack"
+gem "activesupport"
+gem "rake", "~> 13.0"
 
 group :development do
   gem "rspec", "~> 3.0", require: false

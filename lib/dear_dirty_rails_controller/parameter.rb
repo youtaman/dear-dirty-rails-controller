@@ -16,45 +16,19 @@ module DearDirtyRailsController
     end
 
     module ClassMethods
-      attr_reader :parameter
+      attr_reader :param_parser
 
       def params(&block)
-        @parameter = Parameters::Object.new(:params, &block)
+        @param_parser = Parameters::Object.new(:params, &block)
       end
     end
 
     module InstanceMethods
-      attr_reader :parsed_parameter
+      def parse_param(params)
+        return if self.class.param_parser.nil?
 
-      def parse_parameter!(params)
-        @parsed_parameter = self.class.parameter.duplicate
-        @parsed_parameter.parse!(params)
+        self.class.param_parser.parse(params)
       end
-    end
-  end
-
-  class A
-    include Parameter
-    params do
-      # datetime :now, optional: true
-      array :users, optional: true do
-        object :user, optional: true do
-          numeric :id, optional: true
-          string :name, optional: true
-          boolean :is_admin, optional: true
-        end
-        # numeric :id, optional: true
-      end
-
-      # array :ids do
-      #   numeric
-      # end
-      # array :num_or_str do
-      #   union :name do # これどう？
-      #     numeric optional: true
-      #     string optional: true
-      #   end
-      # end
     end
   end
 end

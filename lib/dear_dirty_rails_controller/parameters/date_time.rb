@@ -6,23 +6,10 @@ require "date"
 module DearDirtyRailsController
   module Parameters
     class DateTime < Base
-      def parse!(value)
-        @parsed_value = begin
-          DateTime.parse(value)
-        rescue
-          nil
-        end
-      end
-
-      def valid?(value)
-        parse!(value)
-        @error_message = nil
-
-        return true unless @parsed_value.nil?
-
-        @error_message = "#{@name} is expected to be not nil" unless optional?
-
-        @error_message.nil?
+      def parse(value)
+        success(::DateTime.parse(value))
+      rescue
+        failure("#{@name} is expected to be date time")
       end
     end
   end

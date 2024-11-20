@@ -8,6 +8,9 @@ require_relative "dear_dirty_rails_controller/rack_response"
 require_relative "dear_dirty_rails_controller/serializable"
 require_relative "dear_dirty_rails_controller/version"
 
+require "action_dispatch"
+require "action_controller"
+
 module DearDirtyRailsController
   module Mixin
     attr_reader :context, :env, :request
@@ -21,21 +24,22 @@ module DearDirtyRailsController
       base.include DearDirtyRailsController::Serializable
     end
 
-    def initialize(env)
+    def initialize(env = {})
       @env = env
-      @request = ActionDispatch::Request.new(env)
+      @request = ::ActionDispatch::Request.new(env)
     end
 
     def raw_params
-      ActionController::Parameters.new(request.params)
+      @raw_params ||= ::ActionController::Parameters.new(request.params)
     end
 
     def params
-      @params ||= self.class.parameter&.parse(raw_params.to_h) || raw_params
+      @params ||= parse_param(request.params)&.extract_value || raw_params
     end
 
     def call
       @context = Context.new
+      parse_param(raw_params)
       begin
         run_before_callbacks
         body serialize(execute) unless skip_execution?

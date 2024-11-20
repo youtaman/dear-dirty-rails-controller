@@ -10,42 +10,40 @@ module DearDirtyRailsController
 
       attr_reader :items
 
+      define_dsl do |item|
+        @items << item
+      end
+
       def initialize(name = nil, **options, &block)
         super(name, **options)
         @items = []
         instance_exec(&block) if block_given?
       end
 
-      def parse!(value)
-        @parsed_value = []
+      def parse(value)
+        return failure("#{@name} is expected to be array") unless array?(value)
 
-        unless value.is_a?(::Array)
-          @parsed_value = nil
-          return
+        parsed_value = value&.map&.with_index do |v, i|
+          result = nil
+          items.each do |item|
+            output = item.parse(v)
+            if output.success?
+              result = output
+              break
+            end
+          end
+          result || failure("#{@name}[#{i}] is not assigned to any type.")
         end
 
-        value.each do |v|
-          parser = items.find { |item| item.valid?(v) } || items.last
-          @parsed_value << parser&.duplicate
-        end
+        success(parsed_value)
       end
 
-      def valid?(value)
-        parse!(value)
+      private
 
-        if @parsed_value.nil? && !optional?
-          @error_message = "#{@name} is expected to be array"
-        else
-          @parsed_value.values.map(&:error_message).every?(&:nil?)
-        end
-      end
+      def array?(value)
+        return true if value.nil?
 
-      def value
-        @parsed_value&.map(&:value)
-      end
-
-      define_dsl do |item|
-        @items << item
+        value.is_a?(::Array)
       end
     end
   end

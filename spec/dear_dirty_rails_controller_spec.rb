@@ -9,6 +9,7 @@ RSpec.describe DearDirtyRailsController do
     {
       "rack.input" => StringIO.new(to_query(params)),
       "QUERY_STRING" => to_query(query),
+      "CONTENT_TYPE" => "application/x-www-form-urlencoded"
     }
   end
 
@@ -56,6 +57,33 @@ RSpec.describe DearDirtyRailsController do
         expect(ActionDispatch::Request).to receive(:new).with(env).and_call_original
         instance = klass.new(env)
         expect(instance.request).to be_a(ActionDispatch::Request)
+      end
+    end
+
+    describe "#raw_params" do
+      it "returns ActionController::Parameters" do
+        env = build_env(params: { a: 1, b: 2 })
+        instance = klass.new(env)
+        expect(instance.raw_params).to be_a(ActionController::Parameters)
+        expect(instance.raw_params.instance_variable_get(:@parameters)).to eq("a" => "1", "b" => "2")
+      end
+    end
+
+    describe "#params" do
+      it "returns parsed params if #parse_param works" do
+        env = build_env(params: { a: 1, b: 2 })
+        instance = klass.new(env)
+        result = DearDirtyRailsController::Parameters::Result.new(:parser, "parsed")
+        expect(instance).to receive(:parse_param).with({ "a" => "1", "b" => "2" }).and_return(result)
+        expect(instance.params).to eq("parsed")
+      end
+
+      it "returns raw_params if #parse_param does not work" do
+        env = build_env(params: { a: 1, b: 2 })
+        instance = klass.new(env)
+        expect(instance).to receive(:parse_param).with({ "a" => "1", "b" => "2" }).and_return(nil)
+        allow(instance).to receive(:raw_params).and_return("raw")
+        expect(instance.params).to eq("raw")
       end
     end
 

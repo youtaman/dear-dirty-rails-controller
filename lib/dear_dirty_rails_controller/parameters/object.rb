@@ -10,33 +10,31 @@ module DearDirtyRailsController
 
       attr_reader :fields
 
+      define_dsl do |field|
+        raise ArgumentError, "name is required in object block" unless field.name
+
+        @fields << field
+      end
+
       def initialize(name = nil, **options, &block)
         super(name, **options)
         @fields = []
         instance_exec(&block) if block_given?
       end
 
-      def parse!(value)
-        @parsed_value = {}
-        fields.each do |field|
-          field.parse!(value[field.name])
-          @parsed_value[field.name] = field
-        end
+      def parse(value)
+        return failure("#{@name} is expected to be object") unless object?(value)
+
+        parsed_value = fields.to_h { |field| [field.name, field.parse(value[field.name])] }
+        success(parsed_value)
       end
 
-      def valid?(value)
-        parse!(value)
-        @parsed_value.values.map(&:error_message).all?(&:nil?)
-      end
+      private
 
-      def value
-        @parsed_value.transform_values(&:value)
-      end
+      def object?(value)
+        return true if value.nil?
 
-      define_dsl do |field|
-        raise ArgumentError, "name is required in object block" unless field.name
-
-        @fields << field
+        value.is_a?(::Hash)
       end
     end
   end

@@ -5,7 +5,7 @@ require_relative "base"
 module DearDirtyRailsController
   module Parameters
     class String < Base
-      VALID_OPTIONS = %i[regexp values].freeze
+      VALID_OPTIONS = %i[regexp values default].freeze
 
       def initialize(name = nil, **options)
         if options[:regexp] && !options[:regexp].is_a?(Regexp)
@@ -13,7 +13,7 @@ module DearDirtyRailsController
                 "regexp option is expected to be Regexp"
         end
 
-        if options[:default] && !options[:default].is_a?(String)
+        if options[:default] && !options[:default].is_a?(::String)
           raise ArgumentError,
                 "default option is expected to be String"
         end
@@ -21,45 +21,27 @@ module DearDirtyRailsController
         super
       end
 
-      def parse!(value)
-        @parsed_value = if value.nil?
-                          default_value.nil? ? nil : default_value
-                        else
-                          value.to_s
-                        end
-      end
-
-      def valid?(value)
-        parse!(value)
-        @error_message = nil
-
-        if @parsed_value.nil?
-          @error_message = "#{@name} is expected to be not nil" unless optional?
-        elsif !match?
-          @error_message = "#{@name} is expected to match #{@options[:regexp]}"
-        elsif !in_values?
-          @error_message = "#{@name} is expected to be in #{@options[:values]}"
-        end
-
-        @error_message.nil?
+      def parse(value)
+        parsed_value = value.nil? ? @options[:default] : value.to_s
+        success(parsed_value)
+          .check(expect: method(:match?), error_message: "#{@name} is expected to match #{@options[:regexp]}")
+          .check(expect: method(:in_values?), error_message: "#{@name} is expected to be in #{@options[:values]}")
       end
 
       private
 
-      def match?
+      def match?(value)
+        return true if value.nil?
         return true unless @options[:regexp]
 
-        @options[:regexp].match? @parsed_value
+        @options[:regexp].match? value
       end
 
-      def in_values?
+      def in_values?(value)
+        return true if value.nil?
         return true unless @options[:values]
 
-        @options[:values].include? @parsed_value
-      end
-
-      def default_value
-        @options[:default] || nil
+        @options[:values].include? value
       end
     end
   end
